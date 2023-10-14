@@ -2,136 +2,159 @@
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
 
 
-#©w¸q¬¡¤Æ¨ç¼Æsqn
+#å®šç¾©æ´»åŒ–å‡½æ•¸sqn
 def sqn(number):
-    mean=(max_value-min_value)/2
-    if number>=mean:
-        return max_value
+    if number>=0:
+        return 1
     else:
-        return min_value
-    
-#©w¸q·Ç½T²vºtºâªk
+        return -1
+        
+#å®šç¾©æº–ç¢ºç‡æ¼”ç®—æ³•
 def acu(data,target,weight):
     correct_number=0
     for i,row in enumerate(data):
-        y=sqn(np.dot(row,weight))
-        if(target[i]==y):
+        y=sqn(np.dot(row,weight.T))
+        if(y==1 and target[i]==max_value):
+            correct_number+=1
+        elif(y==-1 and target[i]==min_value):
             correct_number+=1
     percent=correct_number/len(data)*100
     return percent
 
-#³B²z¸ê®Æ
+#è™•ç†è³‡æ–™
 def data_process(data_all):
-    print(data_all)
-    #¸ê®Æ±Æ§Ç
-    data_number=len(data_all)#¸ê®Æ¼Æ¶q
-    train_number=int(data_number*2/3) #°V½m¸ê®Æ¼Æ¶q
+    
+    #è³‡æ–™æ’åº
+    data_number=len(data_all)#è³‡æ–™æ•¸é‡
+    
+    train_number=int(data_number*2/3) #è¨“ç·´è³‡æ–™æ•¸é‡
     
     global max_value,min_value
-    target=data_all[:,-1:].reshape(data_number) #¥Ø¼Ğ±i¶q
+    target=data_all[:,-1:].reshape(data_number) #ç›®æ¨™å¼µé‡
+    
     max_value=np.max(target)
     min_value=np.min(target)
 
-    w_0=np.full((data_number,1),-1)#´î¥h¯«¸g»Ö­È
-    data_all=np.empty((data_number,3),dtype=float) #°V½m¸ê®Æ
+    w_0=np.full((data_number,1),-1)#æ¸›å»ç¥ç¶“é–¥å€¼
+    
     data_all=np.hstack((w_0,data_all[:,:2]))
-    #ÀH¾÷¿ï¨ú°V½m¸ê®Æ©M´ú¸Õ¸ê®Æ
-    random_train=np.random.choice(data_number, size=train_number, replace=False)
-    data_train=data_all[random_train,:]
-    data_test=np.delete(data_all,random_train,axis=0)
-    return data_train,data_test,target
+    #éš¨æ©Ÿé¸å–è¨“ç·´è³‡æ–™å’Œæ¸¬è©¦è³‡æ–™
+    random=np.random.choice(data_number, size=train_number, replace=False)
+    data_train=data_all[random,:]
+    target_train=target[random]
+    data_test=np.delete(data_all,random,axis=0)
+    target_test=np.delete(target,random)
+    
+    return data_train,target_train,data_test,target_test
         
 
-#¶]epoch
-def run_epoch(data,target):
-    #ÀH¾÷ªì©l¤ÆÁäµ²­È
-    weight_key=np.random.uniform(-1,1,size=3)
-    for i in range(epoch):
-        count=i% len(data)  #¥¿¦b³B²z²Ä´X¶µ¸ê®Æ
-        y=sqn(np.dot(data[count],weight_key)) #°µ¤º¿n
-        if y==target[count]:
-            weight_key= weight_key #¤£°µ§ïÅÜ
-        elif y==max_value and target[count]== min_value:
-            weight_key-=learing_rate*data[count] #©¹­t¤è¦V®Õ¥¿¤è¦V
-        elif y==min_value and target[count]== max_value:
-            weight_key+=learing_rate*data[count] #©¹¥¿¤è¦V®Õ¥¿¤è¦V
-        else:
-            print("wrong")  #³ø¿ù
+#è·‘epoch
+def run_epoch(train_data, target):
+    # éš¨æ©Ÿåˆå§‹åŒ–éµçµå€¼
+    weight_key = np.random.uniform(-1, 1, size=3)
     
-    percent=acu(data,target,weight_key)
-    return weight_key,percent
+    for i in range(epoch):
+        
+        for number in range(len(train_data)):
+            y = sqn(np.dot(train_data[number], weight_key.T))  # åšå…§ç©
+            
+            if y == 1 and target[number] == min_value:
+                weight_key -= learing_rate * train_data[number]
+            elif y == -1 and target[number] == max_value:
+                weight_key += learing_rate * train_data[number]
+
+    percent = acu(train_data, target, weight_key)
+    return weight_key, percent
 
 
-#¶]accuracy
-def run_accuracy(data,target):
-    i=0
-    percent=0
-    while(percent<accuracy): #¤j©ó·Ç½T²v´N¸õ¥X¨ç¦¡
-        count=i%len(data)  #¥¿¦b³B²z²Ä´X¶µ¸ê®Æ
-        y=sqn(np.dot(data[count],weight_key)) #°µ¤º¿n
-        if y==target[count]:
-            weight_key= weight_key #¤£°µ§ïÅÜ
-        elif y==max_value and target[count]==min_value:
-            weight_key-=learing_rate*data[count] #©¹­t¤è¦V®Õ¥¿¤è¦V
-        elif y==min_value and target[count]==max_value:
-            weight_key+=learing_rate*data[count] #©¹¥¿¤è¦V®Õ¥¿¤è¦V
-        else:
-            print("wrong")  #³ø¿ù
-        i+=1
-        percent=acu(data,target,weight_key)
-    return weight_key,percent
 
-#©w¸q«ö¶s±Ò°Ê
-def start(): #¶}©l
+
+def draw_plot(data):#ç•«å·¦é‚Šåœ–
+    target=data[0][2]
+    one_kind_condition=data[:,2]==target
+    one_kind_x=data[one_kind_condition,0]
+    one_kind_y=data[one_kind_condition,1]
+
+    two_kind_x=data[~one_kind_condition,0]
+    two_kind_y=data[~one_kind_condition,1]
+    a1.clear()
+    a1.plot(two_kind_x,two_kind_y,'bo')
+    a1.plot(one_kind_x,one_kind_y,'go')
+    canvas1.draw()
+
+def draw_plot2(data,weight):#ç•«å³é‚Šåœ–
+    target=data[0][2]
+    one_kind_condition=data[:,2]==target
+    one_kind_x=data[one_kind_condition,0]
+    one_kind_y=data[one_kind_condition,1]
+
+    two_kind_x=data[~one_kind_condition,0]
+    two_kind_y=data[~one_kind_condition,1]
+
+    x = np.linspace(-10, 10, 100)
+    y=weight[0]/weight[2]-weight[1]/weight[2]*x
+
+    a2.clear()
+    a2.plot(two_kind_x,two_kind_y,'bo')
+    a2.plot(one_kind_x,one_kind_y,'go')
+    a2.plot(x,y,'r')
+
+    canvas2.draw()
+
+
+#å®šç¾©æŒ‰éˆ•å•Ÿå‹•
+def start(): #é–‹å§‹
     global epoch,learing_rate,accuracy
-    np.random.seed(1234) #³]©wºØ¤l
+    np.random.seed(1234) #è¨­å®šç¨®å­
     epoch=int(sp_epo.get())
-    accuracy=float(sp_acu.get())/100
+    accuracy=float(sp_acu.get())
     learing_rate=float(sp_rate.get())
-    data=np.loadtxt(file_path,dtype=float, encoding="utf-8")
-    data_train,data_test,target=data_process(data)
-    option=var.get()
-    if option=="A":
-        weight_key,train_percent=run_epoch(data_train,target)
-        weight_key,test_percent=run_epoch(data_test,target)
-        lb_train.config(text=f"Train accuracy : {train_percent}")
-        lb_test.config(text=f"Test accuracy : {test_percent}")
-        lb_weight.config(text=f"Weight : {weight_key}")
-    else:
-        weight_key,train_percent=run_accuracy(data_train,target)
-        weight_key,test_percent=run_accuracy(data_test,target)
-        lb_train.config(text=f"Train accuracy : {train_percent}")
-        lb_test.config(text=f"Test accuracy : {test_percent}")
-        lb_weight.config(text=f"Weight : {weight_key}")
 
-def file(): #¥´¶}¸ê®Æ
-    global file_path
+    data_train,target_train,data_test,target_test=data_process(data)
+    weight_key,train_percent=run_epoch(data_train,target_train)
+    test_percent=acu(data_test,target_test,weight_key)
+
+    draw_plot2(data,weight_key)
+
+    lb_train.config(text=f"Train accuracy : {train_percent}")
+    lb_test.config(text=f"Test accuracy : {test_percent}")
+    lb_weight.config(text=f"Weight : {weight_key}")
+
+
+def file(): #æ‰“é–‹è³‡æ–™
+    global file_path,data
     file_path = filedialog.askopenfilename()
     file_path=file_path.replace("\\","/")
     lb_file.config(text=file_path)
     lb_file.place(x=10,y=335)
+    data=np.loadtxt(file_path,dtype=float, encoding="utf-8")
+    draw_plot(data)
 
-def epo_or_acu(): #¿ï¾Ü­n¥ÎepochÁÙ¬Oacu
-    option=var.get()
-    if option=="A":
-        lb_percent.place_forget()
-        sp_epo.place(x=120,y=405)
-        sp_acu.place_forget()
-        
-    else:
-        lb_percent.place(x=170,y=428)
-        sp_acu.place(x=120,y=428)
-        sp_epo.place_forget()
 
-#¿é¤J¤¶­±
+#è¼¸å…¥ä»‹é¢
 win=tk.Tk()
 win.config(bg="gainsboro")
 win.title("Perceptron")
-win.geometry("800x600")
+win.geometry("900x600")
+f1 = Figure(figsize=(3.7, 2.9), dpi=100)
+a1 = f1.add_subplot(111)
+f2 = Figure(figsize=(3.7, 2.9), dpi=100)
+a2 = f2.add_subplot(111)
+canvas1 = FigureCanvasTkAgg(f1, master=win)
+canvas1.draw()
+canvas1.get_tk_widget().place(x=50,y=10)
+canvas2 = FigureCanvasTkAgg(f2, master=win)
+canvas2.draw()
+canvas2.get_tk_widget().place(x=450,y=10)
 
-#©w¸qwidget
+toolbar = NavigationToolbar2Tk(canvas2, win)
+toolbar.update()
+
+#å®šç¾©widget
 lb_rate=tk.Label(text="learing rate")
 lb_file=tk.Label(text="")
 lb_method=tk.Label(text="Method",font=15)
@@ -145,14 +168,12 @@ sp_rate=tk.Spinbox(from_=0.05, to=1.0,increment=0.05)
 btn_start=tk.Button(text="start",command=start,font=10,width=5)
 data_btn=tk.Button(text="Data",command=file)
 var = tk.StringVar()
-radio_epo=tk.Radiobutton(text="Epoch",variable=var,value="A",bg="gainsboro",command=epo_or_acu)
-radio_acu=tk.Radiobutton(text="Accuracy",variable=var,value="B",bg="gainsboro",command=epo_or_acu)
+radio_epo=tk.Radiobutton(text="Epoch",variable=var,value="A",bg="gainsboro")
 radio_epo.invoke()
 
-#±Æª©
+#æ’ç‰ˆ
 data_btn.place(x=10,y=300)
 radio_epo.place(x=10,y=400)
-radio_acu.place(x=10,y=425)
 lb_method.place(x=10,y=370)
 lb_rate.place(x=10,y=470)
 sp_rate.place(x=10,y=495)
@@ -160,9 +181,7 @@ btn_start.place(x=360,y=550)
 lb_train.place(x=400,y=400)
 lb_test.place(x=400,y=440)
 lb_weight.place(x=400,y=480)
+sp_epo.place(x=120,y=405)
 
 
 win.mainloop()
-
-
-
