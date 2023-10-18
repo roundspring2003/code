@@ -149,4 +149,4 @@ int main(){
     
 }
 
-//·|¦]¬°position°ÝÃD¡A§ì¤£¨ì¤@¨Ç­È¡A­n¥Îvoid¡A¥þ°ìposition¤@ª½µ¹¥L++¡A·F¥þ³¡­«§ïÂû¤Ú[]
+//æœƒå› ç‚ºpositionå•é¡Œï¼ŒæŠ“ä¸åˆ°ä¸€äº›å€¼ï¼Œè¦ç”¨voidï¼Œå…¨åŸŸpositionä¸€ç›´çµ¦ä»–++ï¼Œå¹¹å…¨éƒ¨é‡æ”¹é›žå·´[]
